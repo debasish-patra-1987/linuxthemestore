@@ -248,7 +248,7 @@ impl Catalog {
             Catalog::Cursors => "Cursor Themes",
             Catalog::GnomeShellThemes => "Gnome Shell Themes",
             Catalog::Gtk4Themes => "Gtk Themes",
-            Catalog:: KDEThemes => "KDE Themes",
+            Catalog::KDEThemes => "KDE Themes",
         }
     }
     pub fn id_to_string(id: &str) -> &str {
@@ -267,7 +267,7 @@ impl Catalog {
             "107" => Catalog::Cursors,
             "134" => Catalog::GnomeShellThemes,
             "135" => Catalog::Gtk4Themes,
-            "104" => Catalog::KDEThemes.
+            "104" => Catalog::KDEThemes,
             _ => Catalog::Gtk4Themes,
         }
     }
@@ -365,7 +365,7 @@ impl SearchPageProps {
         let base_url = String::from("www.pling.com");
         String::from("https://")
             + &base_url
-            + "/ocs/v1/content/data?format=json&categories=132,107,134,135&pagesize="
+            + "/ocs/v1/content/data?format=json&categories=132,107,134,135,104&pagesize="
             + format!("{}", self.pagesize).as_str()
             + "&page=0"
             + "&sortmode=update"
@@ -450,6 +450,9 @@ fn install_tar(path: &str, theme_type: &Catalog) -> Result<()> {
         }
         Catalog::Gtk4Themes | Catalog::GnomeShellThemes => {
             extract_path.push(".local/share/themes");
+        }
+        Catalog::KDEThemes => {
+            extract_path.push(".local/share/plasma/desktoptheme");
         }
     }
 
