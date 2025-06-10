@@ -230,6 +230,7 @@ pub enum Catalog {
     Cursors,
     GnomeShellThemes,
     Gtk4Themes,
+    KDEThemes,
 }
 impl Catalog {
     pub fn get_id(&self) -> &str {
@@ -238,6 +239,7 @@ impl Catalog {
             Catalog::Cursors => "107",
             Catalog::GnomeShellThemes => "134",
             Catalog::Gtk4Themes => "135",
+            Catalog::KDEThemes => "104",
         }
     }
     pub fn to_string(&self) -> &str {
@@ -246,6 +248,7 @@ impl Catalog {
             Catalog::Cursors => "Cursor Themes",
             Catalog::GnomeShellThemes => "Gnome Shell Themes",
             Catalog::Gtk4Themes => "Gtk Themes",
+            Catalog:: KDEThemes => "KDE Themes",
         }
     }
     pub fn id_to_string(id: &str) -> &str {
@@ -254,6 +257,7 @@ impl Catalog {
             "107" => "Cursor Themes",
             "134" => "Gnome Shell Themes",
             "135" => "Gtk Themes",
+            "104" => "KDE Themes",
             _ => "Others",
         }
     }
@@ -263,6 +267,7 @@ impl Catalog {
             "107" => Catalog::Cursors,
             "134" => Catalog::GnomeShellThemes,
             "135" => Catalog::Gtk4Themes,
+            "104" => Catalog::KDEThemes.
             _ => Catalog::Gtk4Themes,
         }
     }
@@ -272,6 +277,7 @@ impl Catalog {
             Catalog::Cursors,
             Catalog::GnomeShellThemes,
             Catalog::Gtk4Themes,
+            Catalog::KDEThemes,
         ]
     }
 }
