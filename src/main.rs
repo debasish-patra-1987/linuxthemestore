@@ -1,9 +1,9 @@
 use adw::glib::object::IsA;
 use adw::gtk::DrawingArea;
+use adw::gtk::SearchEntry;
 use adw::prelude::{ActionRowExt, AdwDialogExt, ExpanderRowExt, PreferencesGroupExt};
 use chrono::DateTime;
-use gtk4::prelude::{
-    ButtonExt, DrawingAreaExt, DrawingAreaExtManual};
+use gtk4::prelude::{ButtonExt, DrawingAreaExt, DrawingAreaExtManual, EditableExt};
 use gtk4::{Button, ContentFit, CssProvider, GestureClick, Image, License};
 use reqwest::blocking::Client;
 use serde::de::Deserializer;
@@ -80,26 +80,16 @@ impl<'de> Deserialize<'de> for Product {
         D: Deserializer<'de>,
     {
         fn strip_html(source: &str) -> String {
-            let mut data = String::new();
             let mut inside = false;
-            // Step 1: loop over string chars.
-            for c in source.chars() {
-                // Step 2: detect markup start and end, and skip over markup chars.
-                if c == '<' {
-                    inside = true;
-                    continue;
-                }
-                if c == '>' {
-                    inside = false;
-                    continue;
-                }
-                if !inside {
-                    // Step 3: push other characters to the result string.
-                    data.push(c);
-                }
-            }
-            // Step 4: return string.
-            return data;
+            source.chars()
+                .filter(|&c| {
+                    match c {
+                        '<' => { inside = true; false },
+                        '>' => { inside = false; false },
+                        _ => !inside,
+                    }
+                })
+                .collect()
         }
 
         fn split_field(key: &str) -> Option<(&str, usize)> {
@@ -343,6 +333,41 @@ impl ProductPageProps {
             + self.sortby.get_label()
     }
 }
+
+//
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SearchPageProps {
+    pub query: String,
+    pub pagesize: u8,
+}
+
+impl SearchPageProps {
+    fn default(search_text: String) -> Self {
+        //Point { x: 0, y: 0 }
+        SearchPageProps {
+            query: search_text,
+            pagesize: 30,
+        }
+    }
+
+    pub fn set_search_text(&mut self, query: String) -> &mut SearchPageProps {
+        self.query = query;
+        self
+    }
+    pub fn get_search_url(&self) -> String {
+        //let base_url: Result<String> = get_env_val("BASE_URL");
+        let base_url = String::from("www.pling.com");
+        String::from("https://")
+            + &base_url
+            + "/ocs/v1/content/data?format=json&categories=132,107,134,135&pagesize="
+            + format!("{}", self.pagesize).as_str()
+            + "&page=0"
+            + "&sortmode=update"
+            + "&search="
+            + self.query.as_str()
+    }
+}
+
 pub fn get_env_val(env_name: &str) -> Result<String> {
     use dotenv::dotenv;
     dotenv().ok();
@@ -356,7 +381,7 @@ pub fn get_formatted_date(dt: &str) -> String {
 }
 
 fn fetch_url(url: &String, file_name: String) -> Result<()> {
-    let response = reqwest::blocking::get(url); //.unwrap().bytes().await;
+    let response = reqwest::blocking::get(url);
     match response {
         Ok(val) => match val.bytes() {
             Ok(content) => {
@@ -370,8 +395,7 @@ fn fetch_url(url: &String, file_name: String) -> Result<()> {
                     Err(why) => panic!("couldn't create {}", why),
                     Ok(file) => file,
                 };
-                //                let content = response;
-                file.write_all(&content)?; //file.write_all(&content.unwrap()),
+                file.write_all(&content)?;
             }
             Err(e) => {
                 panic!("Panic while converting to bytes : {} : {}", url, e);
@@ -385,78 +409,71 @@ fn fetch_url(url: &String, file_name: String) -> Result<()> {
     Ok(())
 }
 fn install_theme(downloaddetail: &DownloadDetail, themetype: &Catalog) -> Result<()> {
-    //println!("Installing theme : {}", dndlink.themetype);
-
     let mut path = String::from("/tmp/themedownloadfiles/");
     path.push_str(themetype.to_string());
     path.push_str("/");
 
     let _ = fs::create_dir_all(&path.as_str());
     path.push_str(&downloaddetail.downloadname);
-    // Check if the file exists in cache, then skip download
     match std::path::Path::new(&path).exists() {
         true => {
-            //println!("File exists in cache : {} ", &path);
         }
         false => {
             let _res = fetch_url(&downloaddetail.downloadlink, path.clone());
         }
     }
-    //println!("File Downloaded. Going to install the file...");
     let _ = install_tar(
         &path.clone(),
-        //&dndlink.ftype.clone(),
         &themetype,
     )
     .unwrap();
-    //println!("File Installed : {}", &path.clone());
-
     Ok(())
 }
 
+use std::path::PathBuf;
+use std::process::Command;
+
 fn install_tar(path: &str, theme_type: &Catalog) -> Result<()> {
-    use std::process::Command;
-    //println!("Before installing tihe tar file. : {}", path);
-    let mut extract_path = std::env::var("HOME").unwrap();
+    // Construct the target extraction path
+    let home_dir = std::env::var("HOME")?;
+    let mut extract_path = PathBuf::from(home_dir);
+
     match theme_type {
         Catalog::FullIconThemes | Catalog::Cursors => {
-            extract_path.push_str("/.local/share/icons/");
+            extract_path.push(".local/share/icons");
         }
         Catalog::Gtk4Themes | Catalog::GnomeShellThemes => {
-            extract_path.push_str("/.local/share/themes/");
+            extract_path.push(".local/share/themes");
         }
     }
-    //println!("Extracting Tar file : {} \nPath : {}", path, extract_path);
+
+    fs::create_dir_all(&extract_path)?;
+
     if path.ends_with(".tar") || path.ends_with(".tar.xz") || path.ends_with(".tar.gz") {
-        let _proc = Command::new("tar")
+        Command::new("tar")
             .arg("-xf")
             .arg(&path)
             .arg("-C")
             .arg(&extract_path)
             .output()
-            .expect("Failed to extract .tar/.tar.xz/.tar.gz not found");
+            .expect("Failed to extract .tar/.tar.xz/.tar.gz");
     } else if path.ends_with(".7z") {
-        //7z x <file_name>.tar.7z -opath
-        let _proc = Command::new("7z")
+        Command::new("7z")
             .arg("x")
             .arg(&path)
-            .arg(format!("-o{}", &extract_path))
-            //.arg(&extract_path)
+            .arg(format!("-o{}", extract_path.display()))
             .output()
-            .expect("Failed to extract .7z file");
+            .expect("Failed to extract .7z");
     } else if path.ends_with(".zip") {
-        //unzip file.zip -d destination_folder
-        let _proc = Command::new("unzip")
+        Command::new("unzip")
             .arg(&path)
             .arg("-d")
             .arg(&extract_path)
             .output()
-            .expect("Failed to extract .zip file");
+            .expect("Failed to extract .zip");
     } else {
-        println!("Unsupported file type. Didnt do anything...");
+        println!("Unsupported file type: {}", path);
     }
-
-    //println!("{} {} Installed Sucessfully", theme_type, &path);
 
     Ok(())
 }
@@ -542,9 +559,20 @@ pub fn load_custom_css() {
                     .img-cover{
                         border-radius: 2%;
                         border-width: 15px;
-                        box-shadow: 0 8px 50px 0 rgba(0, 0, 0, 0.2), 0 6px 50px 0 rgba(0, 0, 0, 0.19);
+                        box-shadow: 0 8px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 8px 0 rgba(0, 0, 0, 0.1);
+                    }
+                    .blur{
+                        filter: blur(1px);
+                        -webkit-filter: blur(1px);
+                    }
+                    .card {
+                        box-shadow: 0 8px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 8px 0 rgba(0, 0, 0, 0.1);
+                    }
+                    button:hover {
+                        transform: scale(1.01); /* 120% zoom */
                     }
                     "
+
                 );
     //.unwrap();
 
@@ -574,6 +602,27 @@ pub fn get_product_catalog(prodpageprops: &ProductPageProps) -> Result<ProductCa
     Ok(resp_json_products)
 }
 
+pub fn get_search_product_catalog(searchpageprops: &SearchPageProps) -> Result<ProductCatalog> {
+    //let mut buffer = Vec::<u8>::new();
+    let client = Client::new();
+    let url = searchpageprops.get_search_url();
+    let url = url.as_str();
+    println!("Search Url : {}", url);
+    let res: serde_json::Value = client
+        .get(url)
+        .send()
+        .expect(format!("Invalid Url : {}", url).as_str())
+        .json()
+        .expect("Failed to get payload");
+    //println!("{}", serde_json::to_string_pretty(&res).unwrap());
+
+    let resp_json_products: ProductCatalog = serde_json::from_value(res).unwrap();
+    println!(
+        "{}",
+        serde_json::to_string_pretty(&resp_json_products).unwrap()
+    );
+    Ok(resp_json_products)
+}
 
 fn downloadthumb(each_product: &Product) -> Result<()> {
     //println!("Got inside Download Thumbnail");
@@ -582,7 +631,7 @@ fn downloadthumb(each_product: &Product) -> Result<()> {
         0 => None,
         _ => Some(&each_product.previewpics[0]),
     };
-    if firstimage.is_none(){
+    if firstimage.is_none() {
         return Ok(());
     }
     let firstimage = firstimage.unwrap();
@@ -603,11 +652,10 @@ fn downloadthumb(each_product: &Product) -> Result<()> {
     //);
 }
 
-
 fn downloadotherimages(each_product: &Product) -> Result<()> {
     //println!("Got inside Download Thumbnail");
 
-    for each_image in &each_product.previewpics[1..]{
+    for each_image in &each_product.previewpics[1..] {
         let save_path = "/tmp/themeinstaller/cache/".to_string() + &each_image;
         if !std::path::Path::new(&save_path).exists() {
             let mut save_dir = save_path.to_string();
@@ -681,7 +729,7 @@ fn build_category_page(
     );
 
     let themecategorysortbybutton = adw::InlineViewSwitcher::new();
-    themecategorysortbybutton.add_css_class("round");
+    //themecategorysortbybutton.add_css_class("round");
     themecategorysortbybutton.set_can_shrink(true);
 
     let themecategorysortby_view_stack = adw::ViewStack::new();
@@ -716,6 +764,53 @@ fn build_category_page(
         );
     }
 }
+
+fn build_search_page(
+    view_stack: &ViewStack,
+    outer_view_stack: &GtkBox,
+    window: &ApplicationWindow,
+) {
+    let searchbox = GtkBox::new(Orientation::Vertical, 10);
+    searchbox.add_css_class("background");
+    let _searchpage_viewstack =
+        view_stack.add_titled(&searchbox, Some("Search Themes"), "Search Themes");
+
+    let searchinput = SearchEntry::new();
+    searchinput.set_search_delay(500);
+    searchinput.set_placeholder_text(Some("e.g. Papirus Theme"));
+
+    //searchinput.add_css_class("round");
+
+    searchbox.set_valign(Align::Fill);
+    searchbox.set_halign(Align::Fill);
+    searchbox.set_homogeneous(false);
+
+    let searchinputbox = GtkBox::new(Orientation::Vertical, 10);
+    searchinputbox.set_valign(Align::Start);
+    searchinputbox.set_halign(Align::Center);
+    searchinputbox.set_homogeneous(false);
+
+    searchinputbox.append(&searchinput);
+    searchbox.append(&searchinputbox);
+
+    outer_view_stack.append(&searchbox);
+    let window_clone = window.clone();
+
+    //create_search_page(&search_text, &searchresultpage);
+    let searchresultpage = GtkBox::new(Orientation::Vertical, 10);
+    searchresultpage.set_valign(Align::Fill);
+    searchresultpage.set_halign(Align::Fill);
+    searchresultpage.set_vexpand(true);
+    searchresultpage.set_hexpand(true);
+
+    //let searchpageprops = SearchPageProps::default("".to_owned());
+    build_search_content_box(&searchinput, &searchresultpage, &window_clone);
+
+    searchbox.append(&searchresultpage);
+    println!("{}", searchinput.text().to_string());
+
+    //    let searchpageprops = SearchPageProps::default(searchinput.text().to_string() );
+}
 // contentbox function
 fn build_flowbox_for_page(each_product: &Product, flowbox: &FlowBox, window: &ApplicationWindow) {
     let imgpath = "/tmp/themeinstaller/cache/".to_string() + &each_product.previewpics[0];
@@ -735,15 +830,28 @@ fn build_flowbox_for_page(each_product: &Product, flowbox: &FlowBox, window: &Ap
     img.set_size_request(260, 260);
     //img.set_can_shrink(true);
     let imgclamp = Clamp::new();
-    let imagespinner = Spinner::builder().valign(Align::Center).halign(Align::Center).hexpand(true).vexpand(true).width_request(32).height_request(32).build();
-    let imagebox = GtkBox::builder().valign(Align::Center).halign(Align::Center).hexpand(true).vexpand(true).height_request(260).width_request(260).build();
+    let imagespinner = Spinner::builder()
+        .valign(Align::Center)
+        .halign(Align::Center)
+        .hexpand(true)
+        .vexpand(true)
+        .width_request(32)
+        .height_request(32)
+        .build();
+    let imagebox = GtkBox::builder()
+        .valign(Align::Center)
+        .halign(Align::Center)
+        .hexpand(true)
+        .vexpand(true)
+        .height_request(260)
+        .width_request(260)
+        .build();
     imagebox.append(&imagespinner);
     //imgclamp.set_child(Some(&img));
     //println!("Setting SPinner");
     imgclamp.set_child(Some(&imagebox));
     imgclamp.set_tightening_threshold(256);
     imgclamp.set_maximum_size(256);
-
 
     let flowboxchild_button = Button::builder()
         .width_request(256)
@@ -911,12 +1019,11 @@ fn build_flowbox_for_page(each_product: &Product, flowbox: &FlowBox, window: &Ap
 
     // Starts
 
-        let (imagesender, imagerecv) = async_channel::unbounded::<String>();
+    let (imagesender, imagerecv) = async_channel::unbounded::<String>();
 
-        let each_prod_clone = each_product.clone();
-        let each_prod_clone_arc = Arc::new(Mutex::new(each_prod_clone));
-        imagespinner.connect_realize(move |_| {
-
+    let each_prod_clone = each_product.clone();
+    let each_prod_clone_arc = Arc::new(Mutex::new(each_prod_clone));
+    imagespinner.connect_realize(move |_| {
         //eprintln!("Inside Image Spinner connect realize!");
 
         let sender = imagesender.clone();
@@ -1102,7 +1209,6 @@ fn build_flowbox_for_page(each_product: &Product, flowbox: &FlowBox, window: &Ap
             .build();
 
         for each_variant in &product.downloaddetails {
-
             let downloadsize_in_mb =
                 ((each_variant.downloadsize as f32) / 100.0).to_string() + " Mb";
             let row: ActionRow = ActionRow::builder()
@@ -1113,7 +1219,7 @@ fn build_flowbox_for_page(each_product: &Product, flowbox: &FlowBox, window: &Ap
                 .build();
             let downloadbutton = Button::builder()
                 .css_classes(vec!["pill1"])
-                .icon_name("browser-download-symbolic")
+                .icon_name("document-save-symbolic")
                 .margin_bottom(10)
                 .margin_top(10)
                 .sensitive(true)
@@ -1124,7 +1230,6 @@ fn build_flowbox_for_page(each_product: &Product, flowbox: &FlowBox, window: &Ap
 
             let (senderdownload, receiverdownload) = async_channel::unbounded::<String>();
             downloadbutton.connect_clicked(move |downloadbutton| {
-
                 downloadbutton.set_child(Some(&Spinner::new()));
                 eprintln!("Clicked!");
 
@@ -1342,8 +1447,7 @@ fn build_content_box(
     let contentpage = GtkBox::new(Orientation::Vertical, 0);
     //contentpage.set_css_classes(&vec!["card"]);
 
-    let flowbox = FlowBox::builder()
-        .build();
+    let flowbox = FlowBox::builder().build();
     flowbox.set_vexpand(true);
     flowbox.set_hexpand(true);
     flowbox.set_valign(Align::Center);
@@ -1375,6 +1479,7 @@ fn build_content_box(
     let flowcontentbox = GtkBox::new(Orientation::Vertical, 0);
     flowcontentbox.set_vexpand(true);
     flowcontentbox.set_hexpand(true);
+
     flowcontentbox.append(&flowbox);
     scrollwindow.set_child(Some(&flowcontentbox));
     flowcontentbox.append(&loadmorebox);
@@ -1395,7 +1500,6 @@ fn build_content_box(
         //println!("_contentbox widget has been realized");
         let sender = loadmoresender.clone();
         let loadmore_productpage_ref = loadmore_productpage_ref.clone();
-
 
         // Run async code to get all required values for populating full icon themes
         adw::gio::spawn_blocking(move || {
@@ -1448,6 +1552,136 @@ fn build_content_box(
     });
 }
 
+fn build_search_content_box(
+    searchentry: &SearchEntry,
+    searchresultpage: &GtkBox,
+    window: &ApplicationWindow,
+) {
+    let search_contentbox = GtkBox::new(Orientation::Vertical, 20);
+    println!("Inside the seach content box");
+    search_contentbox.set_widget_name("SearchContentBox");
+    //window.set_height_request(1024);
+    search_contentbox.set_valign(Align::Center);
+    search_contentbox.set_halign(Align::Center);
+
+    search_contentbox.set_vexpand(true);
+    search_contentbox.set_hexpand(true);
+
+    let themecategory_loadingpage = GtkBox::new(Orientation::Vertical, 0);
+    themecategory_loadingpage.set_widget_name("themecategory_loadingpage");
+    themecategory_loadingpage.append(&search_contentbox);
+    //_page async loading of first page
+
+    searchresultpage.append(&themecategory_loadingpage);
+
+    let searchcontentpage = GtkBox::new(Orientation::Vertical, 0);
+    //contentpage.set_css_classes(&vec!["card"]);
+
+    let flowbox = FlowBox::builder().build();
+    flowbox.set_vexpand(true);
+    flowbox.set_hexpand(true);
+    flowbox.set_valign(Align::Center);
+    flowbox.set_halign(Align::Center);
+    flowbox.set_activate_on_single_click(false);
+    flowbox.set_min_children_per_line(1);
+    flowbox.set_max_children_per_line(5);
+    flowbox.set_selection_mode(SelectionMode::None);
+    flowbox.set_css_classes(&vec!["suggested-action"]);
+    let flowboxrevealer = adw::gtk::Revealer::new();
+        flowboxrevealer.set_transition_type(adw::gtk::RevealerTransitionType::Crossfade);
+        flowboxrevealer.set_transition_duration(3000); // in milliseconds
+        flowboxrevealer.set_child(Some(&flowbox));
+    flowboxrevealer.set_reveal_child(true);
+
+
+    let scrollwindow = ScrolledWindow::builder()
+        .hexpand(true)
+        .vexpand(true)
+        .build();
+    scrollwindow.set_policy(PolicyType::Automatic, PolicyType::Automatic);
+
+    searchcontentpage.append(&scrollwindow);
+
+    //searchcontentpage.append(&scrollwindow);
+    let flowcontentbox = GtkBox::new(Orientation::Vertical, 0);
+    flowcontentbox.set_vexpand(true);
+    flowcontentbox.set_hexpand(true);
+
+    flowcontentbox.append(&flowboxrevealer);
+    scrollwindow.set_child(Some(&flowcontentbox));
+    println!("Inside the search content box flowcontentbox");
+    let (sender, receiver) = async_channel::unbounded::<(String, ProductCatalog)>();
+    //let (loadmoresender, loadmorereceiver) = async_channel::unbounded::<ProductCatalog>();
+    //let productpage_ref = Arc::new(Mutex::new(searchpageprops.clone()));
+    //let loadmore_productpage_ref: Arc<Mutex<SearchPageProps>> = Arc::clone(&productpage_ref);
+    let productpage = SearchPageProps::default(searchentry.text().to_string());
+
+    //let contentbox_productpage_ref = Arc::clone(&productpage_ref);
+    println!("Inside the seach content box2");
+    let firstloadsender = sender.clone();
+    let product_ref = Arc::new(Mutex::new(productpage));
+    let product_loadmore_ref = Arc::clone(&product_ref);
+    //let flowbox_clone: FlowBox = flowbox.clone();
+    let flowboxrevealer_clone = flowboxrevealer.clone();
+    searchentry.connect_search_changed(move |searchentry| {
+
+        println!("search_contentbox widget has been changed");
+        let sender = firstloadsender.clone();
+        let sender_ref = Arc::new(Mutex::new(sender.clone()));
+        let mut productpage_mutex = product_loadmore_ref.lock().unwrap();
+        let productpage = productpage_mutex.deref_mut();
+        productpage.set_search_text(searchentry.text().to_string());
+        let productpage_ref = Arc::new(Mutex::new(productpage.clone()));
+        //let productpage_ref = Arc::clone(&contentbox_productpage_ref);
+
+        //let flowbox_ref = Arc::clone(&flowbox_ref);
+        //let flowbox_ref = flowbox_ref.lock().unwrap();
+        //let flowbox = flowbox_ref.deref();
+        // Run async code to get all required values for populating themes
+        adw::gio::spawn_blocking(move || {
+            let sender_ref = sender_ref.lock().unwrap();
+            let sender = sender_ref.deref();
+            let productpage_mutex = productpage_ref.lock().unwrap();
+            let productpage = productpage_mutex.deref();
+            //let productprops = productpage;
+
+            let productcatalog: ProductCatalog = get_search_product_catalog(&productpage).unwrap();
+            //downloadthumbs(productcatalog.data.clone()).unwrap();
+            sender
+                .send_blocking(("firstload".to_string(), productcatalog))
+                .unwrap_or_default();
+        });
+    });
+
+    // The main loop executes the asynchronous block
+    let window: ApplicationWindow = window.clone();
+    glib::spawn_future_local({
+        async move {
+            while let Ok((message, productcatalog)) = receiver.recv().await {
+                println!("Search Entry Changed Recv");
+                if message.eq("firstload") {
+                    flowboxrevealer_clone.set_reveal_child(false);
+                    while flowbox.first_child().is_some() {
+                        let child = flowbox.first_child().unwrap();
+                        flowbox.remove(&child);
+                    }
+                    while themecategory_loadingpage.first_child().is_some() {
+                        let child = themecategory_loadingpage.first_child().unwrap();
+                        themecategory_loadingpage.remove(&child);
+                    }
+                    for each_product in productcatalog.data {
+                        build_flowbox_for_page(&each_product, &flowbox, &window);
+                    }
+                    //themecategory_loadingpage.remove(&search_contentbox);
+
+                    themecategory_loadingpage.append(&searchcontentpage);
+                    flowboxrevealer.set_reveal_child(true);
+                }
+            }
+        }
+    });
+}
+
 fn main() -> glib::ExitCode {
     // Initialize GTK
     adw::init().unwrap();
@@ -1474,7 +1708,7 @@ fn build_ui(app: &adw::Application) {
     // Initial Screen Widgets below Starts
     // View Switcher
     let view_switcher = adw::InlineViewSwitcher::new();
-    view_switcher.add_css_class("round");
+    //view_switcher.add_css_class("round");
 
     // View Stack
     let view_stack = adw::ViewStack::new();
@@ -1507,27 +1741,26 @@ fn build_ui(app: &adw::Application) {
         .default_height(1080)
         .build();
 
-    let about_button = Button::from_icon_name("info-outline-symbolic");
+    let about_button = Button::from_icon_name("dialog-information-symbolic");
     header_bar.pack_end(&about_button);
 
     let window_clone = window.clone();
-    about_button.connect_clicked(move |_|{
-
+    about_button.connect_clicked(move |_| {
         let about_dialog = AboutDialog::builder()
             .application_name("Linux Theme Store")
             .developer_name("Debasish Patra")
             .application_icon("io.github.debasish_patra_1987.linuxthemestore")
-            .version("1.0.1")
+            .version("1.0.2")
             .license_type(License::Gpl30)
             .comments("Download and Install Desktop Themes")
             .build();
 
         about_dialog.present(Some(&window_clone));
-        });
+    });
 
     for each_catalog_type in Catalog::get_all_catalog_types() {
         build_category_page(&view_stack, &outer_view_stack, &each_catalog_type, &window);
     }
-
+    build_search_page(&view_stack, &outer_view_stack, &window);
     window.present();
 }
