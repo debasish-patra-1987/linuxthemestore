@@ -22,13 +22,13 @@ yay -S linuxthemestore-git
 ```
 ## _Binary build_
 
-To build this application from source, you will need the following development tools and libraries installed on your system:
-
-* **Build System:** Meson, Ninja
+To build this application from source, you'll need the following development tools and libraries installed on your system:
+* **Build System** Meson, Ninja
 * **Compilers & Toolchains:** Rust (with Cargo), C/C++ Compiler (e.g., GCC, Clang)
 * **Development Libraries:**
-    * GLib 2.0 (including GIO 2.0) development headers
-    * GTK 3.0 development headers
+    * GNOME Development Libraries (including GTK3, GTK4, GLib, GIO, Graphene, Libadwaita)
+        * *Use Gnome SDK for an easier experience*
+    * OpenSSL development headers
 * **Utilities:** pkg-config, gettext, Git
 
 **Installation**
