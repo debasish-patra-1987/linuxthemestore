@@ -13,6 +13,8 @@ use adw::gtk::StringObject;
 use adw::prelude::ComboRowExt;
 use adw::prelude::PreferencesPageExt;
 use adw::prelude::{ActionRowExt, AdwDialogExt, ExpanderRowExt, PreferencesGroupExt};
+use adw::Carousel;
+use adw::CarouselIndicatorDots;
 use adw::ComboRow;
 use adw::PreferencesPage;
 use chrono::DateTime;
@@ -22,6 +24,7 @@ use gtk4::{Button, ContentFit, CssProvider, GestureClick, License};
 use reqwest::blocking::Client;
 use serde::de::Deserializer;
 use serde::{Deserialize, Serialize};
+use std::cell::Cell;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use walkdir::WalkDir;
@@ -1196,59 +1199,7 @@ fn build_flowbox_for_page(each_product: &Product, flowbox: &FlowBox, window: &Ap
                 .unwrap_or_default();
         });
 
-        //Insert Images in dialog body
-        let total_preview_pics = product.previewpics.len();
-        let imgpath = "/tmp/themeinstaller/cache/".to_string() + &product.previewpics[0];
-        let img = Picture::builder()
-            .valign(Align::Center)
-            .hexpand_set(true)
-            .vexpand_set(true)
-            .margin_start(0)
-            .margin_end(0)
-            .margin_top(0)
-            .margin_bottom(0)
-            .css_name("img-cover")
-            .build();
-        img.add_css_class("img-cover");
-        //img.set_size_request(512, 512);
-        img.set_width_request(512);
-        img.set_content_fit(ContentFit::Fill);
-        img.set_filename(Some(&std::path::Path::new(imgpath.as_str())));
 
-        let each_img_box = GtkBox::builder()
-            .spacing(10)
-            .orientation(Orientation::Horizontal)
-            .vexpand(false)
-            .hexpand(false)
-            .build();
-        let prev_button = Button::builder()
-            .icon_name("go-previous-symbolic")
-            .css_classes(vec!["circular"])
-            .hexpand(true)
-            .vexpand(true)
-            .halign(Align::Center)
-            .valign(Align::Center)
-            .margin_bottom(15)
-            .margin_top(0)
-            .build();
-
-        let next_button = Button::builder()
-            .icon_name("go-next-symbolic")
-            .css_classes(vec!["circular"])
-            .hexpand(true)
-            .vexpand(true)
-            .halign(Align::Center)
-            .valign(Align::Center)
-            .margin_bottom(15)
-            .margin_top(0)
-            .build();
-        if total_preview_pics > 1 {
-            each_img_box.append(&prev_button);
-        }
-        each_img_box.append(&img);
-        if total_preview_pics > 1 {
-            each_img_box.append(&next_button);
-        }
         let imgclamp = Clamp::new();
         imgclamp.set_css_classes(&vec!["clamp"]);
         imgclamp.set_tightening_threshold(256);
@@ -1257,39 +1208,6 @@ fn build_flowbox_for_page(each_product: &Product, flowbox: &FlowBox, window: &Ap
         imgclamp.set_margin_top(20);
         imgclamp.set_margin_bottom(20);
 
-        let current_index = Arc::new(Mutex::new((0, total_preview_pics)));
-        let previewpics = product.previewpics.clone();
-        let img_prev = img.clone();
-        prev_button.connect_clicked(move |_prev_button| {
-            let mut curret_index_mutex = current_index.lock().unwrap();
-            let (current_index, total_preview_pics) = curret_index_mutex.deref_mut();
-            if *current_index == 0 {
-                *current_index = *total_preview_pics - 1;
-            } else {
-                *current_index -= 1;
-            }
-            let current_index = *current_index as usize;
-
-            let imgpath = "/tmp/themeinstaller/cache/".to_string() + &previewpics[current_index];
-            img_prev.set_filename(Some(&std::path::Path::new(imgpath.as_str())));
-        });
-
-        let current_index = Arc::new(Mutex::new((0, total_preview_pics as i32)));
-        let previewpics_next = product.previewpics.clone();
-        let img_next = img.clone();
-        next_button.connect_clicked(move |_next_button| {
-            let mut curret_index_mutex = current_index.lock().unwrap();
-            let (current_index, total_preview_pics) = curret_index_mutex.deref_mut();
-            if *current_index == (*total_preview_pics - 1) {
-                *current_index = 0;
-            } else {
-                *current_index += 1;
-            }
-            let current_index = *current_index as usize;
-            let imgpath =
-                "/tmp/themeinstaller/cache/".to_string() + &previewpics_next[current_index];
-            img_next.set_filename(Some(&std::path::Path::new(imgpath.as_str())));
-        });
         //imgclamp.hide();
         let allimagespinner = Spinner::builder()
             .valign(Align::Center)
@@ -1303,13 +1221,53 @@ fn build_flowbox_for_page(each_product: &Product, flowbox: &FlowBox, window: &Ap
         imgclamp.set_child(Some(&allimagespinner));
 
         let imgclamp_clone = imgclamp.clone();
+        let previewpics_clone = product.previewpics.clone();
         glib::spawn_future_local({
             async move {
                 while let Ok(message) = receiver.recv().await {
                     if message.eq(&String::from("allimagesdownloaded")) {
                         //allimagespinner.hide();
+
+                        let carousal = Carousel::new();
+                        let carousal_ind = CarouselIndicatorDots::builder().carousel(&carousal).build();
+
+                        for path in &previewpics_clone{
+                        let imgpath = "/tmp/themeinstaller/cache/".to_string() + path;
+                        let img = Picture::builder()
+                            .valign(Align::Center)
+                            .hexpand_set(true)
+                            .vexpand_set(true)
+                            .margin_start(0)
+                            .margin_end(0)
+                            .margin_top(0)
+                            .margin_bottom(0)
+                            .css_name("img-cover")
+                            .build();
+                        img.add_css_class("img-cover");
+                        //img.set_size_request(512, 512);
+                        img.set_width_request(512);
+                        img.set_content_fit(ContentFit::Fill);
+                        img.set_filename(Some(&std::path::Path::new(imgpath.as_str())));
+                        carousal.append(&img);
+                        }
+                        //Insert Images in dialog body
+
+                        let each_img_box = GtkBox::builder()
+                            .spacing(10)
+                            .orientation(Orientation::Horizontal)
+                            .vexpand(false)
+                            .hexpand(false)
+                            .build();
+
+                        let  carouselbox = GtkBox::new(Orientation::Vertical,0);
+                        carouselbox.append(&carousal);
+                        carouselbox.append(&carousal_ind);
+                        each_img_box.append(&carouselbox);
+
+
                         imgclamp_clone.set_child(Some(&each_img_box));
-                        //imgclamp_clone.show();
+
+
                     } else {
                     }
                 }
@@ -1334,8 +1292,9 @@ fn build_flowbox_for_page(each_product: &Product, flowbox: &FlowBox, window: &Ap
                 //.css_name("card")
                 .build();
             let downloadbutton = Button::builder()
-                .css_classes(vec!["pill1"])
-                .icon_name("document-save-symbolic")
+                //.css_classes(vec!["flat"])
+                .icon_name("folder-download-symbolic")
+                .tooltip_text("Download Theme")
                 .margin_bottom(10)
                 .margin_top(10)
                 .sensitive(true)
@@ -1372,7 +1331,8 @@ fn build_flowbox_for_page(each_product: &Product, flowbox: &FlowBox, window: &Ap
                     async move {
                         while let Ok(message) = receiverdownload_clone.recv().await {
                             if message.eq(&String::from("downloaded")) {
-                                downloadbutton_clone.set_icon_name("ephy-download-done-symbolic");
+                                downloadbutton_clone.set_icon_name("test-pass-symbolic");
+                                downloadbutton_clone.set_tooltip_text(Some("Apply"));
                                 downloadbutton_clone.set_sensitive(false);
                             } else {
                             }
