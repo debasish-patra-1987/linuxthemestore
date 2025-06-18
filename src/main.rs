@@ -1966,7 +1966,7 @@ fn build_ui(app: &adw::Application) {
             .application_name("Linux Theme Store")
             .developer_name("Debasish Patra")
             .application_icon("io.github.debasish_patra_1987.linuxthemestore")
-            .version("1.0.4")
+            .version("1.0.5")
             .license_type(License::Gpl30)
             .comments("Download and Install Desktop Themes")
             .build();
@@ -1997,6 +1997,7 @@ fn build_ui(app: &adw::Application) {
     build_search_page(&body_viewstack, &outer_view_stack, &window);
 
     let installed_themes_box = GtkBox::new(Orientation::Vertical, 5);
+    installed_themes_box.set_margin_bottom(10);
     installed_themes_box.set_widget_name("Installed_themes_box");
     installed_themes_box.set_width_request(500);
 
@@ -2034,6 +2035,7 @@ fn build_ui(app: &adw::Application) {
             page.set_valign(Align::Center);
             installed_themes_box.append(&page);
             populate_installed_themes_page(get_all_installed_themes(),page);
+
             }
         }
     });
@@ -2049,7 +2051,7 @@ pub fn populate_installed_themes_page(themes: Vec<InstalledTheme>, page: Prefere
         let model: adw::gio::ListStore =
             adw::gio::ListStore::with_type(StringObject::static_type());
         model.append(&StringObject::new(""));
-        let model_clone = model.clone();
+        //let model_clone = model.clone();
 
         match each_item.name {
             Catalog::FullIconThemes => {
@@ -2154,6 +2156,7 @@ pub fn populate_installed_themes_page(themes: Vec<InstalledTheme>, page: Prefere
 
                 group.set_title("Change Styles");
                 page.add(&group);
+
             }/*
             Catalog::GnomeShellThemes => {
                 // Create the ListStore model
