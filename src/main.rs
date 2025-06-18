@@ -2045,11 +2045,12 @@ pub fn populate_installed_themes_page(themes: Vec<InstalledTheme>, page: Prefere
 
 
     for each_item in themes {
-                // Create the ListStore model
-                let model: adw::gio::ListStore =
-                    adw::gio::ListStore::with_type(StringObject::static_type());
-                model.append(&StringObject::new("Adwaita"));
-                let model_clone = model.clone();
+        // Create the ListStore model
+        let model: adw::gio::ListStore =
+            adw::gio::ListStore::with_type(StringObject::static_type());
+        model.append(&StringObject::new(""));
+        let model_clone = model.clone();
+
         match each_item.name {
             Catalog::FullIconThemes => {
 
@@ -2072,7 +2073,9 @@ pub fn populate_installed_themes_page(themes: Vec<InstalledTheme>, page: Prefere
                     if let Some(item) = model.item(row.selected()) {
                         let value = item.downcast_ref::<StringObject>().unwrap();
                         println!("Selected: {}", value.string());
-                        apply_theme(each_item.name.clone(), &value.string());
+                        if value.string().eq(""){
+                            apply_theme(each_item.name.clone(), &value.string());
+                        }
                     }
                 });
 
@@ -2090,14 +2093,7 @@ pub fn populate_installed_themes_page(themes: Vec<InstalledTheme>, page: Prefere
                     .iter()
                     .position(|s| s.eq_ignore_ascii_case(&get_applied_theme(name.clone()))){
                         Some(index) => index + 1,
-                        _ =>  {
-                                //options.push(get_applied_theme(name.clone()));
-                                let current_theme = get_applied_theme(name.clone());
-                                let current_theme_stringobj = StringObject::new(&current_theme);
-                                model_clone.append(&current_theme_stringobj);
-                                let newpos = model_clone.find(&current_theme_stringobj);
-                                newpos.unwrap() as usize + 1
-                            },
+                        _ =>  0,
                     };
                 println!("Icon THeme Index : {}",index);
                 println!("Icon THeme Options : {:#?}",options);
@@ -2131,7 +2127,9 @@ pub fn populate_installed_themes_page(themes: Vec<InstalledTheme>, page: Prefere
                     if let Some(item) = model.item(row.selected()) {
                         let value = item.downcast_ref::<StringObject>().unwrap();
                         println!("Selected: {}", value.string());
-                        apply_theme(each_item.name.clone(), &value.string());
+                        if value.string().eq(""){
+                            apply_theme(each_item.name.clone(), &value.string());
+                        }
                     }
                 });
 
@@ -2142,14 +2140,7 @@ pub fn populate_installed_themes_page(themes: Vec<InstalledTheme>, page: Prefere
                     .iter()
                     .position(|s| s.eq_ignore_ascii_case(&get_applied_theme(name.clone()))){
                         Some(index) => index + 1,
-                        _ =>  {
-                                //options.push(get_applied_theme(name.clone()));
-                                let current_theme = get_applied_theme(name.clone());
-                                let current_theme_stringobj = StringObject::new(&current_theme);
-                                model_clone.append(&current_theme_stringobj);
-                                let newpos = model_clone.find(&current_theme_stringobj);
-                                newpos.unwrap() as usize + 1
-                            },
+                        _ => 0,
                     };
                 let index = u32::try_from(index).expect("Value too large for u32");
                 combo.set_selected(index);
@@ -2220,7 +2211,9 @@ pub fn populate_installed_themes_page(themes: Vec<InstalledTheme>, page: Prefere
                     if let Some(item) = model.item(row.selected()) {
                         let value = item.downcast_ref::<StringObject>().unwrap();
                         println!("Selected: {}", value.string());
-                        apply_theme(each_item.name.clone(), &value.string());
+                         if value.string().eq(""){
+                            apply_theme(each_item.name.clone(), &value.string());
+                        }
                     }
                 });
                 let name = Catalog::Gtk4Themes;
@@ -2233,16 +2226,7 @@ pub fn populate_installed_themes_page(themes: Vec<InstalledTheme>, page: Prefere
                     .iter()
                     .position(|s| s.eq_ignore_ascii_case(&get_applied_theme(name.clone()))){
                         Some(index) => index+1,
-                        _ =>  {
-                                //options.push(get_applied_theme(name.clone()));
-                                let current_theme = get_applied_theme(name.clone());
-                                println!("Current Gtk Theme : {}", current_theme);
-                                let current_theme_stringobj = StringObject::new(&current_theme);
-                                model_clone.append(&current_theme_stringobj);
-                                let newpos = model_clone.find(&current_theme_stringobj);
-                                println!("New Pos : {:?}", newpos);
-                                newpos.unwrap() as usize + 1
-                            },
+                        _ =>  0,
                     };
                 println!("Gtk THeme Index : {}",index);
 
