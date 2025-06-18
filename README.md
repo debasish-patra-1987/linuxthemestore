@@ -6,6 +6,11 @@
 
 ## Releases
 
+### 1.0.5 (2025-06-18)
+**Added ability to apply themes for:**
+- Converted Preview Pics in Detailed Screen to Caraousel
+- Bug Fixed where themes were being set randomly in Installed page
+
 ### 1.0.4 (2025-06-17)
 **Added ability to apply themes for:**
 - Gtk4 Themes
@@ -38,13 +43,13 @@
 ---
 Here are some screenshots & video preview
 
-[![Thumbnail](https://raw.githubusercontent.com/debasish-patra-1987/linuxthemestore/091a55bcc31eb254b90114c6719c200fe5f86b47/screenshots/1.png)](https://raw.githubusercontent.com/debasish-patra-1987/linuxthemestore/091a55bcc31eb254b90114c6719c200fe5f86b47/screenshots/1.png)
+[![Thumbnail](https://raw.githubusercontent.com/debasish-patra-1987/linuxthemestore/ed61ee4cff31c6a936413416b94068bbf767c6fe/screenshots/1.png)](https://raw.githubusercontent.com/debasish-patra-1987/linuxthemestore/ed61ee4cff31c6a936413416b94068bbf767c6fe/screenshots/1.png)
 
-[![Thumbnail](https://raw.githubusercontent.com/debasish-patra-1987/linuxthemestore/091a55bcc31eb254b90114c6719c200fe5f86b47/screenshots/2.png)](https://raw.githubusercontent.com/debasish-patra-1987/linuxthemestore/091a55bcc31eb254b90114c6719c200fe5f86b47/screenshots/1.png)
+[![Thumbnail](https://raw.githubusercontent.com/debasish-patra-1987/linuxthemestore/ed61ee4cff31c6a936413416b94068bbf767c6fe/screenshots/2.png)](https://raw.githubusercontent.com/debasish-patra-1987/linuxthemestore/ed61ee4cff31c6a936413416b94068bbf767c6fe/screenshots/1.png)
 
-[![Thumbnail](https://raw.githubusercontent.com/debasish-patra-1987/linuxthemestore/091a55bcc31eb254b90114c6719c200fe5f86b47/screenshots/3.png)](https://raw.githubusercontent.com/debasish-patra-1987/linuxthemestore/091a55bcc31eb254b90114c6719c200fe5f86b47/screenshots/3.png)
+[![Thumbnail](https://raw.githubusercontent.com/debasish-patra-1987/linuxthemestore/ed61ee4cff31c6a936413416b94068bbf767c6fe/screenshots/3.png)](https://raw.githubusercontent.com/debasish-patra-1987/linuxthemestore/ed61ee4cff31c6a936413416b94068bbf767c6fe/screenshots/3.png)
 
-[![Thumbnail](https://raw.githubusercontent.com/debasish-patra-1987/linuxthemestore/091a55bcc31eb254b90114c6719c200fe5f86b47/screenshots/4.png)](https://raw.githubusercontent.com/debasish-patra-1987/linuxthemestore/091a55bcc31eb254b90114c6719c200fe5f86b47/screenshots/4.png)
+[![Thumbnail](https://raw.githubusercontent.com/debasish-patra-1987/linuxthemestore/ed61ee4cff31c6a936413416b94068bbf767c6fe/screenshots/4.png)](https://raw.githubusercontent.com/debasish-patra-1987/linuxthemestore/ed61ee4cff31c6a936413416b94068bbf767c6fe/screenshots/4.png)
 
 
 [![alt text](https://i.ibb.co/V0TK6Sgg/5.png)](https://github.com/debasish-patra-1987/linuxthemestore/raw/refs/heads/main/screenshots/screencastsample.mp4)

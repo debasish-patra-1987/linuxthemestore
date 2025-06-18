@@ -14,23 +14,23 @@
   <screenshots>
     <screenshot type="default">
       <caption>Themes Light Mode</caption>
-      <image>https://raw.githubusercontent.com/debasish-patra-1987/linuxthemestore/091a55bcc31eb254b90114c6719c200fe5f86b47/screenshots/1.png</image>
+      <image>https://raw.githubusercontent.com/debasish-patra-1987/linuxthemestore/ed61ee4cff31c6a936413416b94068bbf767c6fe/screenshots/1.png</image>
     </screenshot>
     <screenshot type="default">
       <caption>Search</caption>
-      <image>https://raw.githubusercontent.com/debasish-patra-1987/linuxthemestore/091a55bcc31eb254b90114c6719c200fe5f86b47/screenshots/2.png</image>
+      <image>https://raw.githubusercontent.com/debasish-patra-1987/linuxthemestore/ed61ee4cff31c6a936413416b94068bbf767c6fe/screenshots/2.png</image>
     </screenshot>
     <screenshot type="default">
       <caption>Installed</caption>
-      <image>https://raw.githubusercontent.com/debasish-patra-1987/linuxthemestore/091a55bcc31eb254b90114c6719c200fe5f86b47/screenshots/3.png</image>
+      <image>https://raw.githubusercontent.com/debasish-patra-1987/linuxthemestore/ed61ee4cff31c6a936413416b94068bbf767c6fe/screenshots/3.png</image>
     </screenshot>
     <screenshot type="default">
       <caption>Dark Mode Detailed 1</caption>
-      <image>https://raw.githubusercontent.com/debasish-patra-1987/linuxthemestore/091a55bcc31eb254b90114c6719c200fe5f86b47/screenshots/4.png</image>
+      <image>https://raw.githubusercontent.com/debasish-patra-1987/linuxthemestore/ed61ee4cff31c6a936413416b94068bbf767c6fe/screenshots/4.png</image>
     </screenshot>
     <screenshot type="default">
       <caption>Dark Mode Detailed 2</caption>
-      <image>https://raw.githubusercontent.com/debasish-patra-1987/linuxthemestore/091a55bcc31eb254b90114c6719c200fe5f86b47/screenshots/4.png</image>
+      <image>https://raw.githubusercontent.com/debasish-patra-1987/linuxthemestore/ed61ee4cff31c6a936413416b94068bbf767c6fe/screenshots/4.png</image>
     </screenshot>
   </screenshots>
   <developer_name>Debasish Patra</developer_name>
@@ -46,7 +46,7 @@
         <p>Features</p>
           <ul>
             <li>Converted Preview Pics in Detailed Screen to Caraousel</li>
-            <li>IBug Fixed where themes were being set randomly in Installed page</li>
+            <li>Bug Fixed where themes were being set randomly in Installed page</li>
           </ul>
       </description>
     </release>
