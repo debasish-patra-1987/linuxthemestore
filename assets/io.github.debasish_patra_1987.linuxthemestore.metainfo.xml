@@ -13,19 +13,23 @@
   </branding>
   <screenshots>
     <screenshot type="default">
-      <caption>Light Mode</caption>
+      <caption>Themes Light Mode</caption>
       <image>https://raw.githubusercontent.com/debasish-patra-1987/linuxthemestore/091a55bcc31eb254b90114c6719c200fe5f86b47/screenshots/1.png</image>
     </screenshot>
     <screenshot type="default">
-      <caption>Dark Mode</caption>
+      <caption>Search</caption>
       <image>https://raw.githubusercontent.com/debasish-patra-1987/linuxthemestore/091a55bcc31eb254b90114c6719c200fe5f86b47/screenshots/2.png</image>
     </screenshot>
     <screenshot type="default">
-      <caption>Light Mode Detailed</caption>
+      <caption>Installed</caption>
       <image>https://raw.githubusercontent.com/debasish-patra-1987/linuxthemestore/091a55bcc31eb254b90114c6719c200fe5f86b47/screenshots/3.png</image>
     </screenshot>
     <screenshot type="default">
-      <caption>Dark Mode Detailed</caption>
+      <caption>Dark Mode Detailed 1</caption>
+      <image>https://raw.githubusercontent.com/debasish-patra-1987/linuxthemestore/091a55bcc31eb254b90114c6719c200fe5f86b47/screenshots/4.png</image>
+    </screenshot>
+    <screenshot type="default">
+      <caption>Dark Mode Detailed 2</caption>
       <image>https://raw.githubusercontent.com/debasish-patra-1987/linuxthemestore/091a55bcc31eb254b90114c6719c200fe5f86b47/screenshots/4.png</image>
     </screenshot>
   </screenshots>
@@ -37,6 +41,15 @@
   <url type="bugtracker">https://github.com/debasish-patra-1987/linuxthemestore/issues</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="1.0.5" date="2025-06-18">
+      <description>
+        <p>Features</p>
+          <ul>
+            <li>Converted Preview Pics in Detailed Screen to Caraousel</li>
+            <li>IBug Fixed where themes were being set randomly in Installed page</li>
+          </ul>
+      </description>
+    </release>
     <release version="1.0.4" date="2025-06-17">
       <description>
         <p>Added ability to apply themes for </p>

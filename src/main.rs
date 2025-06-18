@@ -759,10 +759,7 @@ fn build_category_page(
     themecategorysortbybutton.add_css_class("round");
     themecategorysortbybutton.set_can_shrink(true);
 
-    let themecategorysortby_view_stack = adw::ViewStack::new();
-    themecategorysortby_view_stack.set_enable_transitions(true);
-    //themecategorysortby_view_stack.add_css_class("background");
-    themecategorysortby_view_stack.set_transition_duration(200);
+    let themecategorysortby_view_stack = adw::ViewStack::builder().enable_transitions(true).build();
 
     themecategorysortbybutton.set_valign(Align::Start);
     themecategorysortbybutton.set_halign(Align::Center);
@@ -800,12 +797,12 @@ fn build_search_page(
     let searchbox = GtkBox::new(Orientation::Vertical, 10);
     searchbox.add_css_class("background");
     let _searchpage_viewstack =
-        view_stack.add_titled(&searchbox, Some("Search Themes"), "Search Themes");
+        view_stack.add_titled(&searchbox, Some("Search"), "Search");
 
     let searchinput = SearchEntry::new();
     searchinput.set_margin_top(10);
     searchinput.set_search_delay(0);
-    searchinput.set_placeholder_text(Some("e.g. Papirus Theme"));
+    searchinput.set_placeholder_text(Some("Search Themes and Wallpapers"));
 
     //searchinput.add_css_class("round");
 
@@ -858,10 +855,7 @@ fn build_installed_page(
     themecategorysortbybutton.add_css_class("round");
     themecategorysortbybutton.set_can_shrink(true);
 
-    let themecategorysortby_view_stack = adw::ViewStack::new();
-    themecategorysortby_view_stack.set_enable_transitions(true);
-    //themecategorysortby_view_stack.add_css_class("background");
-    themecategorysortby_view_stack.set_transition_duration(200);
+    let themecategorysortby_view_stack = adw::ViewStack::builder().enable_transitions(true).build();
 
     themecategorysortbybutton.set_valign(Align::Start);
     themecategorysortbybutton.set_halign(Align::Center);
@@ -1248,7 +1242,11 @@ fn build_flowbox_for_page(each_product: &Product, flowbox: &FlowBox, window: &Ap
                         img.set_width_request(512);
                         img.set_content_fit(ContentFit::Fill);
                         img.set_filename(Some(&std::path::Path::new(imgpath.as_str())));
-                        carousal.append(&img);
+
+                        let imgbox = GtkBox::new(Orientation::Vertical,5);
+                        imgbox.append(&img);
+                        //imgbox.append(&Label::new(Some(path)));
+                        carousal.append(&imgbox);
                         }
                         //Insert Images in dialog body
 
@@ -1277,9 +1275,16 @@ fn build_flowbox_for_page(each_product: &Product, flowbox: &FlowBox, window: &Ap
         dialogbody.append(&imgclamp);
 
         dialog.set_child(Some(&dialogbox));
-
+        let producttype = &product.typename.clone().to_string();
+        let preftitle = match producttype.as_str(){
+            "Full Icon Themes" => "~/.local/share/icons",
+            "Cursors" => "~/.local/share/icons",
+            "Gnome Shell Themes" => "~/.local/share/themes",
+            "GTK3/4 Themes" => "~/.local/share/themes",
+            _ => "~/.local/share/wallpapers",
+        };
         let group = PreferencesGroup::builder()
-            .title("Select Variants to Download")
+            .title(format!("Installed in {}",preftitle))
             .build();
 
         for each_variant in &product.downloaddetails {
@@ -1921,10 +1926,8 @@ fn build_ui(app: &adw::Application) {
     view_switcher.add_css_class("round");
 
     // View Stack
-    let view_stack = adw::ViewStack::new();
-    view_stack.set_enable_transitions(true);
+    let view_stack = adw::ViewStack::builder().enable_transitions(true).build();
     view_stack.add_css_class("background");
-    view_stack.set_transition_duration(200);
     view_switcher.set_stack(Some(&view_stack));
 
     // Header Bar Setup below
@@ -1976,9 +1979,7 @@ fn build_ui(app: &adw::Application) {
     body_switcher_box.set_valign(Align::Start);
     body_switcher_box.set_halign(Align::Center);
 
-    let body_viewstack = adw::ViewStack::new();
-    view_stack.set_enable_transitions(true);
-    view_stack.set_transition_duration(200);
+    let body_viewstack = adw::ViewStack::builder().enable_transitions(true).build();
     let _body_viewstack = body_viewstack.add_titled(&header_box, Some("Browse"), "Browse");
 
     bodybox.append(&header_bar);
@@ -1999,7 +2000,7 @@ fn build_ui(app: &adw::Application) {
     installed_themes_box.set_widget_name("Installed_themes_box");
     installed_themes_box.set_width_request(500);
 
-    let themes = get_all_installed_themes();
+    //let themes = get_all_installed_themes();
 
     let _body_viewstack =
         body_viewstack.add_titled(&installed_themes_box, Some("Installed"), "Installed");
@@ -2032,7 +2033,7 @@ fn build_ui(app: &adw::Application) {
             page.set_vexpand(true);
             page.set_valign(Align::Center);
             installed_themes_box.append(&page);
-            populate_installed_themes_page(get_all_installed_themes(),&installed_themes_box, page);
+            populate_installed_themes_page(get_all_installed_themes(),page);
             }
         }
     });
@@ -2040,16 +2041,18 @@ fn build_ui(app: &adw::Application) {
     window.present();
 }
 
-pub fn populate_installed_themes_page(themes: Vec<InstalledTheme>, installed_themes_box: &GtkBox,page: PreferencesPage) {
+pub fn populate_installed_themes_page(themes: Vec<InstalledTheme>, page: PreferencesPage) {
 
 
     for each_item in themes {
-        match each_item.name {
-            Catalog::FullIconThemes => {
                 // Create the ListStore model
                 let model: adw::gio::ListStore =
                     adw::gio::ListStore::with_type(StringObject::static_type());
                 model.append(&StringObject::new("Adwaita"));
+                let model_clone = model.clone();
+        match each_item.name {
+            Catalog::FullIconThemes => {
+
                 // Populate the model dynamically
                 for item in &each_item.options {
                     let itemstr = StringObject::new(&item.clone());
@@ -2074,13 +2077,30 @@ pub fn populate_installed_themes_page(themes: Vec<InstalledTheme>, installed_the
                 });
 
                 let name = Catalog::FullIconThemes;
+                /*
                 let index = each_item
                     .options
                     .iter()
                     .position(|s| s.eq_ignore_ascii_case(&get_applied_theme(name.clone())))
                     .unwrap_or_else(||0);
+                 */
+                let options = each_item.options;
+
+                let index = match options
+                    .iter()
+                    .position(|s| s.eq_ignore_ascii_case(&get_applied_theme(name.clone()))){
+                        Some(index) => index + 1,
+                        _ =>  {
+                                //options.push(get_applied_theme(name.clone()));
+                                let current_theme = get_applied_theme(name.clone());
+                                let current_theme_stringobj = StringObject::new(&current_theme);
+                                model_clone.append(&current_theme_stringobj);
+                                let newpos = model_clone.find(&current_theme_stringobj);
+                                newpos.unwrap() as usize + 1
+                            },
+                    };
                 println!("Icon THeme Index : {}",index);
-                println!("Icon THeme Options : {:#?}",each_item.options);
+                println!("Icon THeme Options : {:#?}",options);
                 let index = u32::try_from(index).expect("Value too large for u32");
                 combo.set_selected(index);
 
@@ -2091,10 +2111,7 @@ pub fn populate_installed_themes_page(themes: Vec<InstalledTheme>, installed_the
                 page.add(&group);
             }
             Catalog::Cursors => {
-                // Create the ListStore model
-                let model: adw::gio::ListStore =
-                    adw::gio::ListStore::with_type(StringObject::static_type());
-                model.append(&StringObject::new("Adwaita"));
+
                 // Populate the model dynamically
                 for item in &each_item.options {
                     let itemstr = StringObject::new(&item.clone());
@@ -2119,11 +2136,21 @@ pub fn populate_installed_themes_page(themes: Vec<InstalledTheme>, installed_the
                 });
 
                 let name = Catalog::Cursors;
-                let index = each_item
-                    .options
+                let options = each_item.options;
+
+                let index = match options
                     .iter()
-                    .position(|s| s.eq_ignore_ascii_case(&get_applied_theme(name.clone())))
-                    .unwrap_or_else(||0);
+                    .position(|s| s.eq_ignore_ascii_case(&get_applied_theme(name.clone()))){
+                        Some(index) => index + 1,
+                        _ =>  {
+                                //options.push(get_applied_theme(name.clone()));
+                                let current_theme = get_applied_theme(name.clone());
+                                let current_theme_stringobj = StringObject::new(&current_theme);
+                                model_clone.append(&current_theme_stringobj);
+                                let newpos = model_clone.find(&current_theme_stringobj);
+                                newpos.unwrap() as usize + 1
+                            },
+                    };
                 let index = u32::try_from(index).expect("Value too large for u32");
                 combo.set_selected(index);
                 // Pack into preferences UI
@@ -2173,10 +2200,7 @@ pub fn populate_installed_themes_page(themes: Vec<InstalledTheme>, installed_the
                 page.add(&group);
             } */
             Catalog::Gtk4Themes => {
-                // Create the ListStore model
-                let model: adw::gio::ListStore =
-                    adw::gio::ListStore::with_type(StringObject::static_type());
-                model.append(&StringObject::new("Adwaita"));
+
                 // Populate the model dynamically
                 for item in &each_item.options {
                     let itemstr = StringObject::new(&item.clone());
@@ -2203,11 +2227,23 @@ pub fn populate_installed_themes_page(themes: Vec<InstalledTheme>, installed_the
                 println!("Catalog:: Gtk4Themes ::> {}",name.to_string());
 
                 println!("Catalog:: Gtk4Themes ::> {}",get_applied_theme(name.clone()));
-                let index = each_item
-                    .options
+                let options = each_item.options;
+
+                let index = match options
                     .iter()
-                    .position(|s| s.eq_ignore_ascii_case(&get_applied_theme(name.clone())))
-                    .unwrap_or_else(||0);
+                    .position(|s| s.eq_ignore_ascii_case(&get_applied_theme(name.clone()))){
+                        Some(index) => index+1,
+                        _ =>  {
+                                //options.push(get_applied_theme(name.clone()));
+                                let current_theme = get_applied_theme(name.clone());
+                                println!("Current Gtk Theme : {}", current_theme);
+                                let current_theme_stringobj = StringObject::new(&current_theme);
+                                model_clone.append(&current_theme_stringobj);
+                                let newpos = model_clone.find(&current_theme_stringobj);
+                                println!("New Pos : {:?}", newpos);
+                                newpos.unwrap() as usize + 1
+                            },
+                    };
                 println!("Gtk THeme Index : {}",index);
 
                 let index = u32::try_from(index).expect("Value too large for u32");
