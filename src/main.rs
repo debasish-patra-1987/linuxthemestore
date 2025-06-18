@@ -2098,7 +2098,9 @@ pub fn populate_installed_themes_page(themes: Vec<InstalledTheme>, page: Prefere
                 println!("Icon THeme Index : {}",index);
                 println!("Icon THeme Options : {:#?}",options);
                 let index = u32::try_from(index).expect("Value too large for u32");
-                combo.set_selected(index);
+                if index != 0{
+                    combo.set_selected(index);
+                }
 
                 // Pack into preferences UI
                 let group = PreferencesGroup::new();
@@ -2143,7 +2145,9 @@ pub fn populate_installed_themes_page(themes: Vec<InstalledTheme>, page: Prefere
                         _ => 0,
                     };
                 let index = u32::try_from(index).expect("Value too large for u32");
-                combo.set_selected(index);
+                if index != 0{
+                    combo.set_selected(index);
+                }
                 // Pack into preferences UI
                 let group = PreferencesGroup::new();
                 group.add(&combo);
@@ -2183,7 +2187,9 @@ pub fn populate_installed_themes_page(themes: Vec<InstalledTheme>, page: Prefere
                     .position(|s| s.eq_ignore_ascii_case(&get_applied_theme(name.clone())))
                     .unwrap_or_else(||1);
                 let index = u32::try_from(index).expect("Value too large for u32");
-                combo.set_selected(index);
+                if index != 0{
+                    combo.set_selected(index);
+                }
                 // Pack into preferences UI
                 let group = PreferencesGroup::new();
                 group.add(&combo);
@@ -2231,7 +2237,9 @@ pub fn populate_installed_themes_page(themes: Vec<InstalledTheme>, page: Prefere
                 println!("Gtk THeme Index : {}",index);
 
                 let index = u32::try_from(index).expect("Value too large for u32");
-                combo.set_selected(index);
+                if index != 0{
+                    combo.set_selected(index);
+                }
                 // Pack into preferences UI
                 let group = PreferencesGroup::new();
                 group.add(&combo);
