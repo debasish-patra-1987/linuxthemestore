@@ -2073,7 +2073,7 @@ pub fn populate_installed_themes_page(themes: Vec<InstalledTheme>, page: Prefere
                     if let Some(item) = model.item(row.selected()) {
                         let value = item.downcast_ref::<StringObject>().unwrap();
                         println!("Selected: {}", value.string());
-                        if value.string().eq(""){
+                        if !value.string().eq(""){
                             apply_theme(each_item.name.clone(), &value.string());
                         }
                     }
@@ -2127,7 +2127,7 @@ pub fn populate_installed_themes_page(themes: Vec<InstalledTheme>, page: Prefere
                     if let Some(item) = model.item(row.selected()) {
                         let value = item.downcast_ref::<StringObject>().unwrap();
                         println!("Selected: {}", value.string());
-                        if value.string().eq(""){
+                        if !value.string().eq(""){
                             apply_theme(each_item.name.clone(), &value.string());
                         }
                     }
@@ -2211,7 +2211,7 @@ pub fn populate_installed_themes_page(themes: Vec<InstalledTheme>, page: Prefere
                     if let Some(item) = model.item(row.selected()) {
                         let value = item.downcast_ref::<StringObject>().unwrap();
                         println!("Selected: {}", value.string());
-                         if value.string().eq(""){
+                         if !value.string().eq(""){
                             apply_theme(each_item.name.clone(), &value.string());
                         }
                     }
