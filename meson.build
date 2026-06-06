@@ -1,4 +1,4 @@
-project('linuxthemestore', 'rust', version: '0.1.0')
+project('linuxthemestore', 'rust', version: '1.1.0')
 
 dependency('glib-2.0')
 dependency('gio-2.0')

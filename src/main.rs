@@ -2049,7 +2049,7 @@ fn build_ui(app: &adw::Application) {
             .application_name("Linux Theme Store")
             .developer_name("Debasish Patra")
             .application_icon("io.github.debasish_patra_1987.linuxthemestore")
-            .version("1.0.5")
+            .version("1.1.0")
             .license_type(License::Gpl30)
             .comments("Download and Install Desktop Themes")
             .build();

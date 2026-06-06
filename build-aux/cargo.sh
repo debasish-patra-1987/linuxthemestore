@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 export MESON_BUILD_ROOT="$1"
 export MESON_SOURCE_ROOT="$2"
