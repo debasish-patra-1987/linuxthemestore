@@ -1,11 +1,9 @@
 use adw::gio::prelude::ListModelExt;
-use adw::gio::prelude::ListModelExtManual;
 use adw::gio::prelude::SettingsExt;
 
 use adw::gio::Settings;
 use adw::glib::object::Cast;
 use adw::glib::object::IsA;
-use adw::glib::object::ObjectExt;
 use adw::glib::types::StaticType;
 use adw::gtk::DrawingArea;
 use adw::gtk::SearchEntry;
@@ -24,7 +22,6 @@ use gtk4::{Button, ContentFit, CssProvider, GestureClick, License};
 use reqwest::blocking::Client;
 use serde::de::Deserializer;
 use serde::{Deserialize, Serialize};
-use std::cell::Cell;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use walkdir::WalkDir;
@@ -772,7 +769,7 @@ fn _downloadthumbs(products: Vec<Product>) -> Result<()> {
 
 fn build_category_page(
     view_stack: &ViewStack,
-    outer_view_stack: &GtkBox,
+    _outer_view_stack: &GtkBox,
     theme_type: &Catalog,
     window: &ApplicationWindow,
 ) {
@@ -816,7 +813,7 @@ fn build_category_page(
 
 fn build_search_page(
     view_stack: &ViewStack,
-    outer_view_stack: &GtkBox,
+    _outer_view_stack: &GtkBox,
     window: &ApplicationWindow,
 ) {
     let searchbox = GtkBox::new(Orientation::Vertical, 10);
@@ -861,11 +858,12 @@ fn build_search_page(
     //    let searchpageprops = SearchPageProps::default(searchinput.text().to_string() );
 }
 
+#[allow(unused)]
 fn build_installed_page(
     view_stack: &ViewStack,
-    outer_view_stack: &GtkBox,
+    _outer_view_stack: &GtkBox,
     theme_type: &Catalog,
-    window: &ApplicationWindow,
+    _window: &ApplicationWindow,
 ) {
     let themecategoryloadingpage = GtkBox::new(Orientation::Vertical, 10);
     themecategoryloadingpage.add_css_class("background");
@@ -1713,10 +1711,11 @@ fn build_content_box(
     });
 }
 
+#[allow(unused)]
 fn build_installed_content_box(
     installed_page: &InstalledTheme,
     view_stack: &ViewStack,
-    window: &ApplicationWindow,
+    _window: &ApplicationWindow,
 ) {
     let themecategory_contentbox = GtkBox::new(Orientation::Vertical, 20);
     //window.set_height_request(1024);
@@ -2009,7 +2008,6 @@ fn build_ui(app: &adw::Application) {
     let _body_viewstack = body_viewstack.add_titled(&header_box, Some("Browse"), "Browse");
 
     bodybox.append(&header_bar);
-    bodybox.append(&header_box);
     bodybox.append(&body_viewstack);
 
     header_box.append(&view_switcher_box);
@@ -2102,7 +2100,7 @@ pub fn populate_installed_themes_page(themes: Vec<InstalledTheme>, page: Prefere
                         let value = item.downcast_ref::<StringObject>().unwrap();
                         println!("Selected: {}", value.string());
                         if !value.string().eq(""){
-                            apply_theme(each_item.name.clone(), &value.string());
+                            let _ = apply_theme(each_item.name.clone(), &value.string());
                         }
                     }
                 });
@@ -2158,7 +2156,7 @@ pub fn populate_installed_themes_page(themes: Vec<InstalledTheme>, page: Prefere
                         let value = item.downcast_ref::<StringObject>().unwrap();
                         println!("Selected: {}", value.string());
                         if !value.string().eq(""){
-                            apply_theme(each_item.name.clone(), &value.string());
+                            let _ = apply_theme(each_item.name.clone(), &value.string());
                         }
                     }
                 });
@@ -2247,7 +2245,7 @@ pub fn populate_installed_themes_page(themes: Vec<InstalledTheme>, page: Prefere
                         let value = item.downcast_ref::<StringObject>().unwrap();
                         println!("Selected: {}", value.string());
                          if !value.string().eq(""){
-                            apply_theme(each_item.name.clone(), &value.string());
+                            let _ = apply_theme(each_item.name.clone(), &value.string());
                         }
                     }
                 });
