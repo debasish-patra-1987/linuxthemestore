@@ -793,9 +793,6 @@ fn build_category_page(
     themecategorysortbybutton.set_valign(Align::Start);
     themecategorysortbybutton.set_halign(Align::Center);
     themecategoryloadingpage.append(&themecategorysortbybutton);
-    //outer_view_stack.append(&fulliconsortbybutton);
-
-    outer_view_stack.append(&themecategorysortbybutton);
 
     themecategorysortbybutton.set_stack(Some(&themecategorysortby_view_stack));
     let themecategorysortby_view_stack_box = GtkBox::new(Orientation::Vertical, 0);
@@ -805,7 +802,6 @@ fn build_category_page(
     // Initial Screen Widgets below Ends
 
     // Starting async loading of items for each page
-    // fullcionprodpage
 
     for each_sorting_type in SortType::get_all_sort_types() {
         build_content_box(
@@ -847,7 +843,6 @@ fn build_search_page(
     searchinputbox.append(&searchinput);
     searchbox.append(&searchinputbox);
 
-    outer_view_stack.append(&searchbox);
     let window_clone = window.clone();
 
     //create_search_page(&search_text, &searchresultpage);
@@ -889,9 +884,6 @@ fn build_installed_page(
     themecategorysortbybutton.set_valign(Align::Start);
     themecategorysortbybutton.set_halign(Align::Center);
     themecategoryloadingpage.append(&themecategorysortbybutton);
-    //outer_view_stack.append(&fulliconsortbybutton);
-
-    outer_view_stack.append(&themecategorysortbybutton);
 
     themecategorysortbybutton.set_stack(Some(&themecategorysortby_view_stack));
     let themecategorysortby_view_stack_box = GtkBox::new(Orientation::Vertical, 0);
@@ -899,19 +891,6 @@ fn build_installed_page(
     themecategoryloadingpage.append(&themecategorysortby_view_stack_box);
 
     // Initial Screen Widgets below Ends
-
-    // Starting async loading of items for each page
-    // fullcionprodpage
-
-    /*
-    build_content_box(
-        ProductPageProps::default()
-            .set_catalog(theme_type.to_owned())
-            .set_order(each_sorting_type.to_owned()),
-        &themecategorysortby_view_stack,
-        &window,
-    );
-    */
 }
 // contentbox function
 fn build_flowbox_for_page(each_product: &Product, flowbox: &FlowBox, window: &ApplicationWindow) {

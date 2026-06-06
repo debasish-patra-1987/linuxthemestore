@@ -39,15 +39,9 @@ install_data(
   install_dir: join_paths(get_option('datadir'), 'icons/hicolor/scalable/apps'),
 )
 
-# Configure and install desktop file
-desktop_file = configure_file(
-  input: 'assets/io.github.debasish_patra_1987.linuxthemestore.in',
-  output: 'io.github.debasish_patra_1987.linuxthemestore.desktop',
-  configuration: {'bindir': get_option('prefix') / get_option('bindir')}
-)
-
+# Install desktop file
 install_data(
-  desktop_file,
+  'assets/io.github.debasish_patra_1987.linuxthemestore.desktop',
   install_dir: join_paths(get_option('datadir'), 'applications'),
   install_mode: ['rwxr-xr-x']
 )
