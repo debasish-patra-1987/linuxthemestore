@@ -438,7 +438,7 @@ fn fetch_url(url: &String, file_name: String) -> Result<()> {
 
     Ok(())
 }
-fn install_theme(downloaddetail: &DownloadDetail, themetype: &Catalog) -> Result<()> {
+fn install_theme(downloaddetail: &DownloadDetail, themetype: &Catalog) -> Result<String> {
     let mut path = String::from("/tmp/themedownloadfiles/");
     path.push_str(themetype.to_string());
     path.push_str("/");
@@ -451,14 +451,59 @@ fn install_theme(downloaddetail: &DownloadDetail, themetype: &Catalog) -> Result
             let _res = fetch_url(&downloaddetail.downloadlink, path.clone());
         }
     }
-    let _ = install_tar(&path.clone(), &themetype).unwrap();
-    Ok(())
+    install_tar(&path.clone(), themetype)
 }
 
 use std::path::PathBuf;
 use std::process::Command;
 
-fn install_tar(path: &str, theme_type: &Catalog) -> Result<()> {
+fn get_top_dir(path: &str) -> Result<String> {
+    if path.ends_with(".tar") || path.ends_with(".tar.xz") || path.ends_with(".tar.gz") {
+        let output = Command::new("tar")
+            .arg("-tf")
+            .arg(&path)
+            .output()?;
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let name = stdout.lines().next().unwrap_or("").trim_end_matches('/').to_string();
+        Ok(name)
+    } else if path.ends_with(".zip") {
+        let output = Command::new("unzip")
+            .arg("-l")
+            .arg(&path)
+            .output()?;
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let name = stdout.lines()
+            .skip(3)
+            .find(|l| l.len() > 30)
+            .and_then(|l| l.split_whitespace().last())
+            .unwrap_or("")
+            .trim_end_matches('/')
+            .to_string();
+        Ok(name)
+    } else if path.ends_with(".7z") {
+        let output = Command::new("7z")
+            .arg("l")
+            .arg(&path)
+            .output()?;
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let name = stdout.lines()
+            .find(|l| l.trim().starts_with("...."))
+            .and_then(|l| l.split_whitespace().last())
+            .unwrap_or("")
+            .to_string();
+        Ok(name)
+    } else if path.ends_with(".jpg") || path.ends_with(".jpeg") || path.ends_with(".png") || path.ends_with(".svg") {
+        Ok(std::path::Path::new(path)
+            .file_stem()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_string())
+    } else {
+        Ok(String::new())
+    }
+}
+
+fn install_tar(path: &str, theme_type: &Catalog) -> Result<String> {
     // Construct the target extraction path
     let home_dir = std::env::var("HOME")?;
     let mut extract_path = PathBuf::from(home_dir);
@@ -516,7 +561,7 @@ fn install_tar(path: &str, theme_type: &Catalog) -> Result<()> {
         println!("Unsupported file type: {}", path);
     }
 
-    Ok(())
+    get_top_dir(path)
 }
 
 pub struct CircleRating {
@@ -772,6 +817,7 @@ fn build_category_page(
     _outer_view_stack: &GtkBox,
     theme_type: &Catalog,
     window: &ApplicationWindow,
+    toast_overlay: &adw::ToastOverlay,
 ) {
     let themecategoryloadingpage = GtkBox::new(Orientation::Vertical, 10);
     themecategoryloadingpage.add_css_class("background");
@@ -807,6 +853,7 @@ fn build_category_page(
                 .set_order(each_sorting_type.to_owned()),
             &themecategorysortby_view_stack,
             &window,
+            toast_overlay,
         );
     }
 }
@@ -815,6 +862,7 @@ fn build_search_page(
     view_stack: &ViewStack,
     _outer_view_stack: &GtkBox,
     window: &ApplicationWindow,
+    toast_overlay: &adw::ToastOverlay,
 ) {
     let searchbox = GtkBox::new(Orientation::Vertical, 10);
     searchbox.add_css_class("background");
@@ -850,7 +898,7 @@ fn build_search_page(
     searchresultpage.set_hexpand(true);
 
     //let searchpageprops = SearchPageProps::default("".to_owned());
-    build_search_content_box(&searchinput, &searchresultpage, &window_clone);
+    build_search_content_box(&searchinput, &searchresultpage, &window_clone, toast_overlay);
 
     searchbox.append(&searchresultpage);
     //println!("{}", searchinput.text().to_string());
@@ -891,7 +939,7 @@ fn build_installed_page(
     // Initial Screen Widgets below Ends
 }
 // contentbox function
-fn build_flowbox_for_page(each_product: &Product, flowbox: &FlowBox, window: &ApplicationWindow) {
+fn build_flowbox_for_page(each_product: &Product, flowbox: &FlowBox, window: &ApplicationWindow, toast_overlay: &adw::ToastOverlay) {
     let imgpath = "/tmp/themeinstaller/cache/".to_string() + &each_product.previewpics[0];
     let img = Picture::builder()
         .valign(Align::Center)
@@ -1149,6 +1197,7 @@ fn build_flowbox_for_page(each_product: &Product, flowbox: &FlowBox, window: &Ap
     flowbox.insert(&productclamp, -1);
 
     let window_clone = window.clone();
+    let toast_overlay = toast_overlay.clone();
     let product = each_product.clone();
     let ges_click = GestureClick::new();
     flowboxchild.add_controller(ges_click.clone());
@@ -1317,35 +1366,45 @@ fn build_flowbox_for_page(each_product: &Product, flowbox: &FlowBox, window: &Ap
             //println!("Catalog Typeid : {:?}",&product.typeid.to_string().as_str());
             //println!("Catalog Type : {:?}",catalogtype.get_id());
 
-            let (senderdownload, receiverdownload) = async_channel::unbounded::<String>();
+            let toast_overlay = toast_overlay.clone();
+            let (senderdownload, receiverdownload) = async_channel::unbounded::<(String, String)>();
+            let mode = Rc::new(RefCell::new(String::new()));
+            let btn_mode = mode.clone();
             downloadbutton.connect_clicked(move |downloadbutton| {
+                let themename = btn_mode.borrow().clone();
+                if !themename.is_empty() {
+                    let _ = apply_theme(catalogtype.clone(), &themename);
+                    toast_overlay.add_toast(adw::Toast::new("Theme applied"));
+                    return;
+                }
                 downloadbutton.set_child(Some(&Spinner::new()));
-                //eprintln!("Clicked!");
+                downloadbutton.set_css_classes(&["flat"]);
 
                 let sender = senderdownload.clone();
                 let catalogtype_arc = Arc::new(Mutex::new(catalogtype.clone()));
                 let new_variant_clone = new_variant.clone();
-                // Run async code to get all required values for populating full icon themes
                 adw::gio::spawn_blocking(move || {
                     let catalogtype_mutex = catalogtype_arc.lock().unwrap();
                     let catalogtype = catalogtype_mutex.deref();
-                    let _ = install_theme(&new_variant_clone, &catalogtype);
+                    let result = install_theme(&new_variant_clone, &catalogtype);
+                    let themename = result.unwrap_or_default();
                     sender
-                        .send_blocking("downloaded".to_string())
+                        .send_blocking(("downloaded".to_string(), themename))
                         .unwrap_or_default();
                 });
 
-                // The main loop executes the asynchronous block
                 let receiverdownload_clone = receiverdownload.clone();
                 let downloadbutton_clone = downloadbutton.clone();
+                let btn_mode = btn_mode.clone();
                 glib::spawn_future_local({
                     async move {
-                        while let Ok(message) = receiverdownload_clone.recv().await {
-                            if message.eq(&String::from("downloaded")) {
-                                downloadbutton_clone.set_icon_name("test-pass-symbolic");
+                        while let Ok((message, themename)) = receiverdownload_clone.recv().await {
+                            if message.eq("downloaded") {
+                                downloadbutton_clone.set_child(None::<&gtk4::Widget>);
+                                downloadbutton_clone.set_icon_name("drive-harddisk-symbolic");
                                 downloadbutton_clone.set_tooltip_text(Some("Apply"));
-                                downloadbutton_clone.set_sensitive(false);
-                            } else {
+                                downloadbutton_clone.set_sensitive(true);
+                                *btn_mode.borrow_mut() = themename;
                             }
                         }
                     }
@@ -1505,6 +1564,7 @@ fn build_content_box(
     productpage: &ProductPageProps,
     themecategorysortby_view_stack: &ViewStack,
     window: &ApplicationWindow,
+    toast_overlay: &adw::ToastOverlay,
 ) {
     let themecategory_contentbox = GtkBox::new(Orientation::Vertical, 20);
     //window.set_height_request(1024);
@@ -1686,12 +1746,13 @@ fn build_content_box(
 
     // The main loop executes the asynchronous block
     let window: ApplicationWindow = window.clone();
+    let toast_overlay: adw::ToastOverlay = toast_overlay.clone();
     let flowboxloading_clone = flowboxloading.clone();
     glib::spawn_future_local({
         async move {
             if let Ok(productcatalog) = receiver.recv().await {
                 for each_product in productcatalog.data {
-                    build_flowbox_for_page(&each_product, &flowbox, &window);
+                    build_flowbox_for_page(&each_product, &flowbox, &window, &toast_overlay);
                 }
                 themecategory_loadingpage.remove(&themecategory_contentbox);
                 themecategory_loadingpage.append(&contentpage);
@@ -1700,7 +1761,7 @@ fn build_content_box(
 
             while let Ok(productcatalog) = loadmorereceiver.recv().await {
                 for each_product in productcatalog.data {
-                    build_flowbox_for_page(&each_product, &flowbox, &window);
+                    build_flowbox_for_page(&each_product, &flowbox, &window, &toast_overlay);
                     //loadmorebox.set_child(&None);
                     //loadmorebox.set_child(Some(&Image::from_icon_name("go-down-symbolic")));
                     //loadmorebox.set_sensitive(true);
@@ -1798,6 +1859,7 @@ fn build_search_content_box(
     searchentry: &SearchEntry,
     searchresultpage: &GtkBox,
     window: &ApplicationWindow,
+    toast_overlay: &adw::ToastOverlay,
 ) {
     let search_contentbox = GtkBox::new(Orientation::Vertical, 20);
     //println!("Inside the seach content box");
@@ -1873,21 +1935,14 @@ fn build_search_content_box(
         let productpage = productpage_mutex.deref_mut();
         productpage.set_search_text(searchentry.text().to_string());
         let productpage_ref = Arc::new(Mutex::new(productpage.clone()));
-        //let productpage_ref = Arc::clone(&contentbox_productpage_ref);
 
-        //let flowbox_ref = Arc::clone(&flowbox_ref);
-        //let flowbox_ref = flowbox_ref.lock().unwrap();
-        //let flowbox = flowbox_ref.deref();
-        // Run async code to get all required values for populating themes
         adw::gio::spawn_blocking(move || {
             let sender_ref = sender_ref.lock().unwrap();
             let sender = sender_ref.deref();
             let productpage_mutex = productpage_ref.lock().unwrap();
             let productpage = productpage_mutex.deref();
-            //let productprops = productpage;
 
             let productcatalog: ProductCatalog = get_search_product_catalog(&productpage).unwrap();
-            //downloadthumbs(productcatalog.data.clone()).unwrap();
             sender
                 .send_blocking(("firstload".to_string(), productcatalog))
                 .unwrap_or_default();
@@ -1896,6 +1951,7 @@ fn build_search_content_box(
 
     // The main loop executes the asynchronous block
     let window: ApplicationWindow = window.clone();
+    let toast_overlay: adw::ToastOverlay = toast_overlay.clone();
     glib::spawn_future_local({
         async move {
             while let Ok((message, productcatalog)) = receiver.recv().await {
@@ -1911,7 +1967,7 @@ fn build_search_content_box(
                         themecategory_loadingpage.remove(&child);
                     }
                     for each_product in productcatalog.data {
-                        build_flowbox_for_page(&each_product, &flowbox, &window);
+                        build_flowbox_for_page(&each_product, &flowbox, &window, &toast_overlay);
                     }
                     //themecategory_loadingpage.remove(&search_contentbox);
 
@@ -1974,10 +2030,12 @@ fn build_ui(app: &adw::Application) {
     outer_view_stack.append(&view_stack);
 
     let bodybox = GtkBox::new(Orientation::Vertical, 0);
+    let toast_overlay = adw::ToastOverlay::new();
+    toast_overlay.set_child(Some(&bodybox));
     // Create main application window
     let window = ApplicationWindow::builder()
         .application(app)
-        .content(&bodybox)
+        .content(&toast_overlay)
         .default_width(1980)
         .default_height(1080)
         .build();
@@ -2016,9 +2074,9 @@ fn build_ui(app: &adw::Application) {
     body_switcher_box.set_stack(Some(&body_viewstack));
 
     for each_catalog_type in Catalog::get_all_catalog_types() {
-        build_category_page(&view_stack, &outer_view_stack, &each_catalog_type, &window);
+        build_category_page(&view_stack, &outer_view_stack, &each_catalog_type, &window, &toast_overlay);
     }
-    build_search_page(&body_viewstack, &outer_view_stack, &window);
+    build_search_page(&body_viewstack, &outer_view_stack, &window, &toast_overlay);
 
     let installed_themes_box = GtkBox::new(Orientation::Vertical, 5);
     installed_themes_box.set_margin_bottom(10);
